@@ -1,0 +1,17 @@
+Please review the following code changes and check if appropriate tests have been added or modified. Focus specifically on test coverage and suggest what kinds of tests should be added if they're missing:
+
+{% for file in files %}
+File: {{ file.filename }}
+
+{{ file.content }}
+
+{% if not loop.last %}
+---
+{% endif %}
+{% endfor %}
+
+Please provide your review in the following format:
+1. Test Coverage Analysis
+2. Missing Tests
+3. Suggested Test Cases
+4. Additional Recommendations 
