@@ -80,7 +80,7 @@ For development:
 
 
 TODO:
-[x] Create a test so I can run the code that posts a comment without the UI.
-[ ] pull-requests takes too long (5 sec +)
 [ ] Save state to a database
+[x] Create a test so I can run the code that posts a comment without the UI.
+[x] pull-requests takes too long (5 sec +)
 [x] push to GH
