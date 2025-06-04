@@ -15,7 +15,7 @@ class PullRequest(BaseModel):
     html_url: str
     user: User
     repository: Repository
-    hasTests: bool = False
+    hasTests: Optional[bool] = None  # Now optional to support lazy loading
 
 class RequestTestsPayload(BaseModel):
     owner: str

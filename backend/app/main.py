@@ -79,7 +79,7 @@ async def request_tests(payload: RequestTestsPayload):
         # Format the comment
         try:
             comment = llm_handler.format_comment(
-                username=pr_data['pr'].user.login,
+                username=pr_data['pr']['user']['login'],
                 review=review
             )
         except Exception as e:
@@ -104,34 +104,33 @@ async def request_tests(payload: RequestTestsPayload):
 
 @app.post("/api/post-comment")
 async def post_comment(payload: RequestTestsPayload):
-    try:
-        # Get PR
-        pr_data = await github_handler.get_pr_files(
-            payload.owner,
-            payload.repo,
-            payload.prNumber
+    if not payload.comment:
+        raise HTTPException(
+            status_code=400,
+            detail="Comment text is required"
         )
         
-        # Post comment on GitHub
-        try:
-            pr_data['pr'].create_issue_comment(payload.comment)
-        except Exception as e:
-            print(f"Error posting comment: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to post comment: {str(e)}"
-            )
+    try:
+        print(f"Attempting to post comment on PR #{payload.prNumber} in {payload.owner}/{payload.repo}")
         
+        # Post comment using the new method
+        result = await github_handler.post_comment(
+            payload.owner,
+            payload.repo,
+            payload.prNumber,
+            payload.comment
+        )
+        
+        print(f"Successfully posted comment: {result.get('html_url', '')}")
         return {
-            "success": True
+            "success": True,
+            "comment_url": result.get('html_url')
         }
-    except HTTPException:
-        raise
     except Exception as e:
-        print(f"Unexpected error in post_comment: {str(e)}")
+        print(f"Error posting comment: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"An unexpected error occurred: {str(e)}"
+            detail=f"Failed to post comment: {str(e)}"
         )
 
 # Catch-all route for Next.js pages
