@@ -3,9 +3,10 @@ import { PullRequest } from '../types/github';
 
 interface Props {
   pr: PullRequest;
+  onUpdate: () => void;
 }
 
-export default function PullRequestComponent({ pr }: Props) {
+export default function PullRequestComponent({ pr, onUpdate }: Props) {
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [previewComment, setPreviewComment] = useState('');
@@ -61,13 +62,21 @@ export default function PullRequestComponent({ pr }: Props) {
         }),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.detail || 'Failed to post comment');
       }
 
+      // Clear the preview and close the modal
       setShowConfirm(false);
       setPreviewComment('');
+      
+      // Show success message
+      setError(''); // Clear any previous errors
+      alert('Comment posted successfully! Check the PR on GitHub.');
+      
+      // Refresh the PR list
+      onUpdate();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -78,12 +87,12 @@ export default function PullRequestComponent({ pr }: Props) {
   return (
     <div className="border rounded-lg p-4 mb-4 bg-white dark:bg-gray-800">
       <h3 className="text-lg font-semibold mb-2">
-        <a href={pr.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+        <a href={pr.html_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
           {pr.title}
         </a>
       </h3>
       <p className="text-gray-600 dark:text-gray-400 mb-4">
-        #{pr.number} opened by {pr.user}
+        #{pr.number} opened by {pr.user.login} in {pr.repository.full_name}
       </p>
       
       {error && (

@@ -76,10 +76,11 @@ For development:
 * The agent will make decisions that fit your request even if it's not a good idea. For example, I started with a node.js app. Then I wanted to use langchain so i switched to python backend so it created a separate python backend server and used node.js as just a pass through for all requests.
 * Generally it doesn't take into account how long things take and I often need to refine approaches like lazy loading, providing loading feedback or parallelization.
 * Many tools are being used and it can go down rabbit holes trying to fix bugs. The users may not really understand the tools.
+* Complexity quickly baloons and debugging becomes difficult. Example is to speed up the PR calls, it added a loop that re-calls the API every few seconds which is a bug and causes performance issues. Tracking it down is not trivial. Regressions also happened when using code generation to fix it automatically.
 
 
 TODO:
-* Create a test so I can run the code that posts a comment without the UI.
-* pull-requests takes too long (5 sec +)
-* Save state to a database
-* push to GH
+[x] Create a test so I can run the code that posts a comment without the UI.
+[ ] pull-requests takes too long (5 sec +)
+[ ] Save state to a database
+[x] push to GH

@@ -1,40 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowPathIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
-import RequestTestsModal from './components/RequestTestsModal';
-
-interface PullRequest {
-  id: number;
-  title: string;
-  number: number;
-  html_url: string;
-  user: {
-    login: string;
-  };
-  hasTests: boolean;
-  repository: {
-    name: string;
-    full_name: string;
-  };
-}
-
-interface ModalState {
-  isOpen: boolean;
-  status: 'loading' | 'error' | 'success';
-  comment?: string;
-  error?: string;
-}
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import { PullRequest, RawPullRequestData } from './types/github';
+import PullRequestComponent from './components/PullRequest';
 
 export default function Home() {
   const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [modalState, setModalState] = useState<ModalState>({
-    isOpen: false,
-    status: 'loading'
-  });
 
   useEffect(() => {
     setMounted(true);
@@ -44,7 +19,16 @@ export default function Home() {
     try {
       const response = await fetch('/api/pull-requests');
       const data = await response.json();
-      setPullRequests(data);
+      
+      // Transform the data to match our type definition
+      const transformedData: PullRequest[] = (data as RawPullRequestData[]).map((pr) => ({
+        ...pr,
+        owner: pr.repository.full_name.split('/')[0],
+        repo: pr.repository.name,
+        url: pr.html_url
+      }));
+      
+      setPullRequests(transformedData);
     } catch (error) {
       console.error('Error fetching PRs:', error);
     } finally {
@@ -56,53 +40,6 @@ export default function Home() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchPRs();
-  };
-
-  const handleRequestTests = async (pr: PullRequest) => {
-    setModalState({
-      isOpen: true,
-      status: 'loading'
-    });
-
-    try {
-      const response = await fetch('/api/request-tests', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          owner: pr.repository.full_name.split('/')[0],
-          repo: pr.repository.name,
-          prNumber: pr.number,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Failed to request tests');
-      }
-
-      setModalState({
-        isOpen: true,
-        status: 'success',
-        comment: data.comment
-      });
-
-      // Refresh the PR list to update the status
-      fetchPRs();
-    } catch (error) {
-      console.error('Error requesting tests:', error);
-      setModalState({
-        isOpen: true,
-        status: 'error',
-        error: error instanceof Error ? error.message : 'An unknown error occurred'
-      });
-    }
-  };
-
-  const handleCloseModal = () => {
-    setModalState(prev => ({ ...prev, isOpen: false }));
   };
 
   useEffect(() => {
@@ -138,49 +75,13 @@ export default function Home() {
 
       <div className="grid gap-4">
         {pullRequests.map((pr) => (
-          <div
-            key={pr.id}
-            className="border rounded-lg p-4 bg-white dark:bg-gray-800 shadow hover:shadow-md transition-shadow"
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <a
-                  href={pr.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xl font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  {pr.title}
-                </a>
-                <p className="text-gray-600 dark:text-gray-400">
-                  #{pr.number} by {pr.user.login} in {pr.repository.full_name}
-                </p>
-              </div>
-              {!pr.hasTests && (
-                <button
-                  onClick={() => handleRequestTests(pr)}
-                  className="flex items-center gap-2 px-3 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-full hover:bg-yellow-200 dark:hover:bg-yellow-800 transition-colors"
-                >
-                  <ExclamationCircleIcon className="h-5 w-5" />
-                  Request Tests
-                </button>
-              )}
-            </div>
-          </div>
+          <PullRequestComponent key={pr.id} pr={pr} onUpdate={fetchPRs} />
         ))}
 
         {pullRequests.length === 0 && (
           <p className="text-center text-gray-500 dark:text-gray-400 py-8">No pull requests found.</p>
         )}
       </div>
-
-      <RequestTestsModal
-        isOpen={modalState.isOpen}
-        onClose={handleCloseModal}
-        status={modalState.status}
-        comment={modalState.comment}
-        error={modalState.error}
-      />
     </main>
   );
 }
